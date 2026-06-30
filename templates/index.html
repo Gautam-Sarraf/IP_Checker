@@ -599,6 +599,36 @@
             });
         }
 
+        // Fetch both IPv4 and IPv6 addresses in parallel
+        async function getClientIPs() {
+            let ipv4 = "";
+            let ipv6 = "";
+            
+            // Try to resolve IPv4
+            try {
+                const res4 = await fetch('https://api.ipify.org?format=json');
+                if (res4.ok) {
+                    const data4 = await res4.json();
+                    ipv4 = data4.ip;
+                }
+            } catch (e) {
+                console.warn("IPv4 lookup failed:", e);
+            }
+            
+            // Try to resolve IPv6
+            try {
+                const res6 = await fetch('https://api6.ipify.org?format=json');
+                if (res6.ok) {
+                    const data6 = await res6.json();
+                    ipv6 = data6.ip;
+                }
+            } catch (e) {
+                console.warn("IPv6 lookup failed (client likely IPv4-only):", e);
+            }
+            
+            return { ipv4, ipv6 };
+        }
+
         // Core locate IP logic
         async function locateIP(ip = "", type = "lookup") {
             const isLookup = type === "lookup";
@@ -613,17 +643,15 @@
             loader.style.display = 'flex';
 
             try {
+                let ipv4 = "";
+                let ipv6 = "";
+
                 // If ip is empty, resolve it using ipify first
-                if (!ip) {
-                    try {
-                        const ipifyRes = await fetch('https://api64.ipify.org?format=json');
-                        if (ipifyRes.ok) {
-                            const ipifyData = await ipifyRes.json();
-                            ip = ipifyData.ip;
-                        }
-                    } catch (e) {
-                        console.warn("ipify failed, falling back to server IP detection:", e);
-                    }
+                if (!ip && !isLookup) {
+                    const ips = await getClientIPs();
+                    ipv4 = ips.ipv4;
+                    ipv6 = ips.ipv6;
+                    ip = ipv6 || ipv4; // Prefer IPv6 for mapping
                 }
 
                 const url = ip ? `/api/location?ip=${encodeURIComponent(ip)}` : '/api/location';
@@ -637,8 +665,30 @@
                 }
 
                 // Render values
-                resIp.textContent = data.query;
+                resIp.textContent = ip || data.query;
                 infoGrid.innerHTML = '';
+
+                // Add IPv4 and IPv6 rows to Visitor Profile if detected
+                if (!isLookup && (ipv4 || ipv6)) {
+                    if (ipv4) {
+                        const ipv4Row = document.createElement('div');
+                        ipv4Row.className = 'info-item';
+                        ipv4Row.innerHTML = `
+                            <span class="info-label">IPv4 Address</span>
+                            <span class="info-value">${ipv4}</span>
+                        `;
+                        infoGrid.appendChild(ipv4Row);
+                    }
+                    if (ipv6) {
+                        const ipv6Row = document.createElement('div');
+                        ipv6Row.className = 'info-item';
+                        ipv6Row.innerHTML = `
+                            <span class="info-label">IPv6 Address</span>
+                            <span class="info-value" style="font-size: 0.85rem;" title="${ipv6}">${ipv6}</span>
+                        `;
+                        infoGrid.appendChild(ipv6Row);
+                    }
+                }
 
                 // Add Coordinates
                 if (typeof data.lat === 'number' && typeof data.lon === 'number') {
@@ -656,7 +706,8 @@
 
                 // Add other metadata
                 for (const [key, value] of Object.entries(data)) {
-                    if (['status', 'query', 'lat', 'lon'].includes(key)) continue;
+                    if (['status', 'lat', 'lon'].includes(key)) continue;
+                    if (!isLookup && key === 'query') continue; // Hide raw query in Visitor Profile as we show explicit IP rows
 
                     const label = fieldLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
                     const row = document.createElement('div');
@@ -695,23 +746,15 @@
                 const accuracy = position.coords.accuracy;
                 
                 try {
-                    // Try to resolve exact client IP via ipify first to fetch proper network ISP info
-                    let ip = "";
-                    try {
-                        const ipifyRes = await fetch('https://api64.ipify.org?format=json');
-                        if (ipifyRes.ok) {
-                            const ipifyData = await ipifyRes.json();
-                            ip = ipifyData.ip;
-                        }
-                    } catch (e) {
-                        console.warn("ipify failed:", e);
-                    }
+                    // Try to resolve client IPs via ipify
+                    const ips = await getClientIPs();
+                    const ip = ips.ipv6 || ips.ipv4;
 
                     const url = ip ? `/api/location?ip=${encodeURIComponent(ip)}` : '/api/location';
                     const response = await fetch(url);
                     const data = response.ok ? await response.json() : {};
                     
-                    resIpVisitor.textContent = data.query || "Local GPS";
+                    resIpVisitor.textContent = ip || data.query || "Local GPS";
                     infoGridVisitor.innerHTML = '';
                     
                     // Coordinates row showing GPS
@@ -733,6 +776,26 @@
                         <span class="info-value">± ${accuracy.toFixed(0)} meters</span>
                     `;
                     infoGridVisitor.appendChild(accuracyRow);
+
+                    // Add IPv4 and IPv6 rows to GPS result list
+                    if (ips.ipv4) {
+                        const ipv4Row = document.createElement('div');
+                        ipv4Row.className = 'info-item';
+                        ipv4Row.innerHTML = `
+                            <span class="info-label">IPv4 Address</span>
+                            <span class="info-value">${ips.ipv4}</span>
+                        `;
+                        infoGridVisitor.appendChild(ipv4Row);
+                    }
+                    if (ips.ipv6) {
+                        const ipv6Row = document.createElement('div');
+                        ipv6Row.className = 'info-item';
+                        ipv6Row.innerHTML = `
+                            <span class="info-label">IPv6 Address</span>
+                            <span class="info-value" style="font-size: 0.85rem;" title="${ips.ipv6}">${ips.ipv6}</span>
+                        `;
+                        infoGridVisitor.appendChild(ipv6Row);
+                    }
                     
                     for (const [key, value] of Object.entries(data)) {
                         if (['status', 'query', 'lat', 'lon'].includes(key)) continue;
