@@ -2,7 +2,7 @@ import os
 import webbrowser
 from threading import Timer
 import requests
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse
 import uvicorn
 
@@ -32,7 +32,23 @@ def read_root():
         return HTMLResponse(content="<h1>Frontend template not found</h1>", status_code=404)
 
 @app.get("/api/location")
-def get_location_endpoint(ip: str = Query(None)):
+def get_location_endpoint(request: Request, ip: str = Query(None)):
+    if not ip:
+        # Extract original client IP behind proxy headers (Render uses x-forwarded-for)
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            ip = forwarded.split(",")[0].strip()
+        else:
+            ip = request.headers.get("x-real-ip")
+        
+        # Fallback to connection ip
+        if not ip:
+            ip = request.client.host
+            
+        # Don't pass loopback addresses to ip-api
+        if ip in ("127.0.0.1", "localhost", "::1", "testclient"):
+            ip = None
+
     result = get_data.get_location(ip)
     if not result:
         return {"status": "fail", "message": "Could not fetch location info"}
