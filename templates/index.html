@@ -86,23 +86,95 @@
 
         main {
             display: grid;
-            grid-template-columns: 420px 1fr;
+            grid-template-columns: 500px 1fr;
             flex-grow: 1;
             height: calc(100vh - 69px);
             position: relative;
         }
 
-        /* Sidebar Control Center */
+        /* Sidebar Split Layout */
         .sidebar {
             background: var(--card-bg);
             border-right: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 70px 1fr;
+            height: 100%;
+            overflow: hidden;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Slim Left Tab Rail */
+        .tab-rail {
+            background: #f8fafc;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 0;
+            gap: 1.25rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            background: #f1f5f9;
+            color: var(--accent-primary);
+        }
+
+        .tab-btn.active {
+            background: rgba(79, 70, 229, 0.08);
+            color: var(--accent-primary);
+        }
+
+        /* Active Tab indicator border */
+        .tab-btn.active::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 25%;
+            height: 50%;
+            width: 3px;
+            background: var(--accent-primary);
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Main Sidebar Content Area */
+        .tab-content-area {
             padding: 2.25rem;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 1.75rem;
-            overflow-y: auto;
-            z-index: 5;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.02);
+            height: 100%;
+        }
+
+        .tab-panel {
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+
+        .tab-panel.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .search-container {
@@ -348,6 +420,7 @@
                 height: auto;
             }
             .sidebar {
+                grid-template-columns: 60px 1fr;
                 border-right: none;
                 border-bottom: 1px solid var(--border-color);
                 height: auto;
@@ -359,40 +432,83 @@
 
     <header>
         <div class="logo">ShadowTrace</div>
-        <div class="badge">Tracker v2.2</div>
+        <div class="badge">Tracker v2.3</div>
     </header>
 
     <main>
         <div class="sidebar">
-            <div class="search-container">
-                <div class="search-title">Query IP Address</div>
-                <div class="input-group">
-                    <input type="text" id="ip-input" placeholder="e.g. 8.8.8.8 (Leave empty for yours)">
-                    <button class="btn" id="search-btn">Locate</button>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                    <button class="btn btn-secondary" id="my-ip-btn">Use My IP</button>
-                    <button class="btn btn-secondary" id="gps-btn" style="border-color: rgba(79, 70, 229, 0.2); color: var(--accent-primary);">Get Precise GPS</button>
-                </div>
+            <!-- Vertical Tab Rail -->
+            <div class="tab-rail">
+                <button class="tab-btn active" id="tab-lookup-btn" title="Lookup IP">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+                <button class="tab-btn" id="tab-visitor-btn" title="Visitor Profile">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </button>
             </div>
 
-            <!-- Loader -->
-            <div class="status-container" id="status-loader">
-                <div class="status-spinner"></div>
-                <div class="status-text">Resolving geolocation details...</div>
-            </div>
+            <!-- Content Area -->
+            <div class="tab-content-area">
+                <!-- Panel 1: IP Lookup -->
+                <div class="tab-panel active" id="panel-lookup">
+                    <div class="search-container">
+                        <div class="search-title">Query IP Address</div>
+                        <div class="input-group">
+                            <input type="text" id="ip-input" placeholder="e.g. 8.8.8.8">
+                            <button class="btn" id="search-btn">Locate</button>
+                        </div>
+                    </div>
 
-            <!-- Error message -->
-            <div class="status-error" id="status-error">
-                Failed to resolve IP location. Please try a valid IP address.
-            </div>
+                    <!-- Loader -->
+                    <div class="status-container" id="status-loader-lookup">
+                        <div class="status-spinner"></div>
+                        <div class="status-text">Resolving geolocation details...</div>
+                    </div>
 
-            <!-- Results -->
-            <div class="results-card" id="results-card">
-                <div style="font-family: var(--font-heading); font-weight: 700; font-size: 1.3rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-primary);" id="result-ip">
-                    8.8.8.8
+                    <!-- Error -->
+                    <div class="status-error" id="status-error-lookup">
+                        Failed to resolve IP location. Please try a valid IP address.
+                    </div>
+
+                    <!-- Results Card -->
+                    <div class="results-card" id="results-card-lookup">
+                        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 1.3rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-primary);" id="result-ip-lookup">
+                            -
+                        </div>
+                        <div class="info-grid" id="info-grid-lookup">
+                        </div>
+                    </div>
                 </div>
-                <div class="info-grid" id="info-grid">
+
+                <!-- Panel 2: Visitor Profile -->
+                <div class="tab-panel" id="panel-visitor">
+                    <div class="search-container">
+                        <div class="search-title">Visitor Geolocation</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <button class="btn" id="my-ip-btn">Use My IP</button>
+                            <button class="btn btn-secondary" id="gps-btn" style="border-color: rgba(79, 70, 229, 0.2); color: var(--accent-primary);">Get Precise GPS</button>
+                        </div>
+                    </div>
+
+                    <!-- Loader -->
+                    <div class="status-container" id="status-loader-visitor">
+                        <div class="status-spinner"></div>
+                        <div class="status-text">Detecting visitor location...</div>
+                    </div>
+
+                    <!-- Error -->
+                    <div class="status-error" id="status-error-visitor">
+                        Failed to detect visitor location. Please refresh.
+                    </div>
+
+                    <!-- Results Card -->
+                    <div class="results-card" id="results-card-visitor">
+                        <div style="font-family: var(--font-heading); font-weight: 700; font-size: 1.3rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-primary);" id="result-ip-visitor">
+                            -
+                        </div>
+                        <div class="info-grid" id="info-grid-visitor">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -428,20 +544,70 @@
         });
 
         // DOM elements
+        const tabLookupBtn = document.getElementById('tab-lookup-btn');
+        const tabVisitorBtn = document.getElementById('tab-visitor-btn');
+        const panelLookup = document.getElementById('panel-lookup');
+        const panelVisitor = document.getElementById('panel-visitor');
+
+        // Lookup elements
         const ipInput = document.getElementById('ip-input');
         const searchBtn = document.getElementById('search-btn');
+        const loaderLookup = document.getElementById('status-loader-lookup');
+        const errorLookup = document.getElementById('status-error-lookup');
+        const resultsCardLookup = document.getElementById('results-card-lookup');
+        const resIpLookup = document.getElementById('result-ip-lookup');
+        const infoGridLookup = document.getElementById('info-grid-lookup');
+
+        // Visitor elements
         const myIpBtn = document.getElementById('my-ip-btn');
         const gpsBtn = document.getElementById('gps-btn');
-        const loader = document.getElementById('status-loader');
-        const errorDiv = document.getElementById('status-error');
-        const resultsCard = document.getElementById('results-card');
+        const loaderVisitor = document.getElementById('status-loader-visitor');
+        const errorVisitor = document.getElementById('status-error-visitor');
+        const resultsCardVisitor = document.getElementById('results-card-visitor');
+        const resIpVisitor = document.getElementById('result-ip-visitor');
+        const infoGridVisitor = document.getElementById('info-grid-visitor');
 
-        const resIp = document.getElementById('result-ip');
-        const infoGrid = document.getElementById('info-grid');
+        // Field label mapping
+        const fieldLabels = {
+            'country': 'Country',
+            'countryCode': 'Country Code',
+            'region': 'Region Code',
+            'regionName': 'Region',
+            'city': 'City',
+            'zip': 'Zip Code',
+            'timezone': 'Timezone',
+            'isp': 'ISP',
+            'org': 'Organization',
+            'as': 'ASN'
+        };
 
-        // Functions
-        async function locateIP(ip = "") {
-            // Reset UI states
+        // Cache coordinates to center map when switching tabs
+        let coordinatesCache = {
+            lookup: null,
+            visitor: null
+        };
+
+        // Helper to update map coordinates
+        function updateMap(lat, lon, zoom = 12) {
+            if (activeMarker) {
+                map.removeLayer(activeMarker);
+            }
+            activeMarker = L.marker([lat, lon], { icon: pulsingIcon }).addTo(map);
+            map.flyTo([lat, lon], zoom, {
+                animate: true,
+                duration: 1.5
+            });
+        }
+
+        // Core locate IP logic
+        async function locateIP(ip = "", type = "lookup") {
+            const isLookup = type === "lookup";
+            const loader = isLookup ? loaderLookup : loaderVisitor;
+            const errorDiv = isLookup ? errorLookup : errorVisitor;
+            const resultsCard = isLookup ? resultsCardLookup : resultsCardVisitor;
+            const resIp = isLookup ? resIpLookup : resIpVisitor;
+            const infoGrid = isLookup ? infoGridLookup : infoGridVisitor;
+
             errorDiv.style.display = 'none';
             resultsCard.classList.remove('active');
             loader.style.display = 'flex';
@@ -457,24 +623,11 @@
                     throw new Error("Failed to find location");
                 }
 
-                // Render values dynamically
+                // Render values
                 resIp.textContent = data.query;
-                infoGrid.innerHTML = ''; // Clear previous
+                infoGrid.innerHTML = '';
 
-                const fieldLabels = {
-                    'country': 'Country',
-                    'countryCode': 'Country Code',
-                    'region': 'Region Code',
-                    'regionName': 'Region',
-                    'city': 'City',
-                    'zip': 'Zip Code',
-                    'timezone': 'Timezone',
-                    'isp': 'ISP',
-                    'org': 'Organization',
-                    'as': 'ASN'
-                };
-
-                // Add Coordinates first
+                // Add Coordinates
                 if (typeof data.lat === 'number' && typeof data.lon === 'number') {
                     const coordsRow = document.createElement('div');
                     coordsRow.className = 'info-item';
@@ -483,9 +636,12 @@
                         <span class="info-value">${data.lat.toFixed(4)}, ${data.lon.toFixed(4)}</span>
                     `;
                     infoGrid.appendChild(coordsRow);
+                    
+                    coordinatesCache[type] = { lat: data.lat, lon: data.lon, zoom: 12 };
+                    updateMap(data.lat, data.lon, 12);
                 }
 
-                // Add all other returned fields
+                // Add other metadata
                 for (const [key, value] of Object.entries(data)) {
                     if (['status', 'query', 'lat', 'lon'].includes(key)) continue;
 
@@ -499,23 +655,6 @@
                     infoGrid.appendChild(row);
                 }
 
-                // Update Map
-                const lat = data.lat;
-                const lon = data.lon;
-
-                if (activeMarker) {
-                    map.removeLayer(activeMarker);
-                }
-
-                activeMarker = L.marker([lat, lon], { icon: pulsingIcon }).addTo(map);
-                
-                // Animate pan and zoom
-                map.flyTo([lat, lon], 12, {
-                    animate: true,
-                    duration: 1.5
-                });
-
-                // Show Results Card
                 loader.style.display = 'none';
                 resultsCard.classList.add('active');
 
@@ -526,31 +665,16 @@
             }
         }
 
-        // Event listeners
-        searchBtn.addEventListener('click', () => {
-            locateIP(ipInput.value.trim());
-        });
-
-        ipInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                locateIP(ipInput.value.trim());
-            }
-        });
-
-        myIpBtn.addEventListener('click', () => {
-            ipInput.value = '';
-            locateIP('');
-        });
-
+        // HTML5 Precise GPS lookup
         async function locateGPS() {
             if (!navigator.geolocation) {
                 alert("Geolocation is not supported by your browser");
                 return;
             }
             
-            errorDiv.style.display = 'none';
-            resultsCard.classList.remove('active');
-            loader.style.display = 'flex';
+            errorVisitor.style.display = 'none';
+            resultsCardVisitor.classList.remove('active');
+            loaderVisitor.style.display = 'flex';
             
             navigator.geolocation.getCurrentPosition(async (position) => {
                 const lat = position.coords.latitude;
@@ -558,14 +682,13 @@
                 const accuracy = position.coords.accuracy;
                 
                 try {
-                    // Try to get network carrier info from the backend IP API
                     const response = await fetch('/api/location');
                     const data = response.ok ? await response.json() : {};
                     
-                    resIp.textContent = data.query || "Local GPS";
-                    infoGrid.innerHTML = '';
+                    resIpVisitor.textContent = data.query || "Local GPS";
+                    infoGridVisitor.innerHTML = '';
                     
-                    // Coordinates row showing GPS flag
+                    // Coordinates row showing GPS
                     const coordsRow = document.createElement('div');
                     coordsRow.className = 'info-item';
                     coordsRow.innerHTML = `
@@ -574,7 +697,7 @@
                             ${lat.toFixed(6)}, ${lon.toFixed(6)} (GPS)
                         </span>
                     `;
-                    infoGrid.appendChild(coordsRow);
+                    infoGridVisitor.appendChild(coordsRow);
 
                     // GPS Accuracy row
                     const accuracyRow = document.createElement('div');
@@ -583,20 +706,7 @@
                         <span class="info-label">Accuracy</span>
                         <span class="info-value">± ${accuracy.toFixed(0)} meters</span>
                     `;
-                    infoGrid.appendChild(accuracyRow);
-                    
-                    const fieldLabels = {
-                        'country': 'Country',
-                        'countryCode': 'Country Code',
-                        'region': 'Region Code',
-                        'regionName': 'Region',
-                        'city': 'City',
-                        'zip': 'Zip Code',
-                        'timezone': 'Timezone',
-                        'isp': 'ISP',
-                        'org': 'Organization',
-                        'as': 'ASN'
-                    };
+                    infoGridVisitor.appendChild(accuracyRow);
                     
                     for (const [key, value] of Object.entries(data)) {
                         if (['status', 'query', 'lat', 'lon'].includes(key)) continue;
@@ -607,28 +717,21 @@
                             <span class="info-label">${label}</span>
                             <span class="info-value" title="${value || ''}">${value || '-'}</span>
                         `;
-                        infoGrid.appendChild(row);
+                        infoGridVisitor.appendChild(row);
                     }
                     
-                    // Update Marker & Map location
-                    if (activeMarker) {
-                        map.removeLayer(activeMarker);
-                    }
-                    activeMarker = L.marker([lat, lon], { icon: pulsingIcon }).addTo(map);
-                    map.flyTo([lat, lon], 16, { // Closer zoom for GPS accuracy
-                        animate: true,
-                        duration: 1.5
-                    });
+                    coordinatesCache.visitor = { lat, lon, zoom: 16 };
+                    updateMap(lat, lon, 16);
                     
-                    loader.style.display = 'none';
-                    resultsCard.classList.add('active');
+                    loaderVisitor.style.display = 'none';
+                    resultsCardVisitor.classList.add('active');
                 } catch (err) {
                     console.error(err);
-                    loader.style.display = 'none';
-                    errorDiv.style.display = 'block';
+                    loaderVisitor.style.display = 'none';
+                    errorVisitor.style.display = 'block';
                 }
             }, (error) => {
-                loader.style.display = 'none';
+                loaderVisitor.style.display = 'none';
                 alert(`GPS Geolocation failed: ${error.message}. Please enable location permissions.`);
             }, {
                 enableHighAccuracy: true,
@@ -637,10 +740,52 @@
             });
         }
 
+        // Tab Switching Logic
+        tabLookupBtn.addEventListener('click', () => {
+            tabLookupBtn.classList.add('active');
+            tabVisitorBtn.classList.remove('active');
+            panelLookup.classList.add('active');
+            panelVisitor.classList.remove('active');
+            
+            // Fly map back to lookup coords if exist
+            if (coordinatesCache.lookup) {
+                updateMap(coordinatesCache.lookup.lat, coordinatesCache.lookup.lon, coordinatesCache.lookup.zoom);
+            }
+        });
+
+        tabVisitorBtn.addEventListener('click', () => {
+            tabVisitorBtn.classList.add('active');
+            tabLookupBtn.classList.remove('active');
+            panelVisitor.classList.add('active');
+            panelLookup.classList.remove('active');
+            
+            // Trigger automatic visitor detection on first click if empty
+            if (!coordinatesCache.visitor) {
+                locateIP("", "visitor");
+            } else {
+                updateMap(coordinatesCache.visitor.lat, coordinatesCache.visitor.lon, coordinatesCache.visitor.zoom);
+            }
+        });
+
+        // Event listeners
+        searchBtn.addEventListener('click', () => {
+            locateIP(ipInput.value.trim(), "lookup");
+        });
+
+        ipInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                locateIP(ipInput.value.trim(), "lookup");
+            }
+        });
+
+        myIpBtn.addEventListener('click', () => {
+            locateIP('', 'visitor');
+        });
+
         gpsBtn.addEventListener('click', locateGPS);
 
-        // Initial load: locate user's current IP location
-        locateIP('');
+        // Initial setup: Load default coordinates or auto-detect in Lookup tab
+        locateIP('8.8.8.8', 'lookup'); // Default startup IP query to initialize the dashboard cleanly
     </script>
 </body>
 </html>
