@@ -370,7 +370,10 @@
                     <input type="text" id="ip-input" placeholder="e.g. 8.8.8.8 (Leave empty for yours)">
                     <button class="btn" id="search-btn">Locate</button>
                 </div>
-                <button class="btn btn-secondary" id="my-ip-btn">Use My IP</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <button class="btn btn-secondary" id="my-ip-btn">Use My IP</button>
+                    <button class="btn btn-secondary" id="gps-btn" style="border-color: rgba(79, 70, 229, 0.2); color: var(--accent-primary);">Get Precise GPS</button>
+                </div>
             </div>
 
             <!-- Loader -->
@@ -428,6 +431,7 @@
         const ipInput = document.getElementById('ip-input');
         const searchBtn = document.getElementById('search-btn');
         const myIpBtn = document.getElementById('my-ip-btn');
+        const gpsBtn = document.getElementById('gps-btn');
         const loader = document.getElementById('status-loader');
         const errorDiv = document.getElementById('status-error');
         const resultsCard = document.getElementById('results-card');
@@ -537,6 +541,103 @@
             ipInput.value = '';
             locateIP('');
         });
+
+        async function locateGPS() {
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser");
+                return;
+            }
+            
+            errorDiv.style.display = 'none';
+            resultsCard.classList.remove('active');
+            loader.style.display = 'flex';
+            
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                
+                try {
+                    // Try to get network carrier info from the backend IP API
+                    const response = await fetch('/api/location');
+                    const data = response.ok ? await response.json() : {};
+                    
+                    resIp.textContent = data.query || "Local GPS";
+                    infoGrid.innerHTML = '';
+                    
+                    // Coordinates row showing GPS flag
+                    const coordsRow = document.createElement('div');
+                    coordsRow.className = 'info-item';
+                    coordsRow.innerHTML = `
+                        <span class="info-label">Coordinates</span>
+                        <span class="info-value" style="color: var(--accent-primary); font-weight: 700;">
+                            ${lat.toFixed(6)}, ${lon.toFixed(6)} (GPS)
+                        </span>
+                    `;
+                    infoGrid.appendChild(coordsRow);
+
+                    // GPS Accuracy row
+                    const accuracyRow = document.createElement('div');
+                    accuracyRow.className = 'info-item';
+                    accuracyRow.innerHTML = `
+                        <span class="info-label">Accuracy</span>
+                        <span class="info-value">± ${accuracy.toFixed(0)} meters</span>
+                    `;
+                    infoGrid.appendChild(accuracyRow);
+                    
+                    const fieldLabels = {
+                        'country': 'Country',
+                        'countryCode': 'Country Code',
+                        'region': 'Region Code',
+                        'regionName': 'Region',
+                        'city': 'City',
+                        'zip': 'Zip Code',
+                        'timezone': 'Timezone',
+                        'isp': 'ISP',
+                        'org': 'Organization',
+                        'as': 'ASN'
+                    };
+                    
+                    for (const [key, value] of Object.entries(data)) {
+                        if (['status', 'query', 'lat', 'lon'].includes(key)) continue;
+                        const label = fieldLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+                        const row = document.createElement('div');
+                        row.className = 'info-item';
+                        row.innerHTML = `
+                            <span class="info-label">${label}</span>
+                            <span class="info-value" title="${value || ''}">${value || '-'}</span>
+                        `;
+                        infoGrid.appendChild(row);
+                    }
+                    
+                    // Update Marker & Map location
+                    if (activeMarker) {
+                        map.removeLayer(activeMarker);
+                    }
+                    activeMarker = L.marker([lat, lon], { icon: pulsingIcon }).addTo(map);
+                    map.flyTo([lat, lon], 16, { // Closer zoom for GPS accuracy
+                        animate: true,
+                        duration: 1.5
+                    });
+                    
+                    loader.style.display = 'none';
+                    resultsCard.classList.add('active');
+                } catch (err) {
+                    console.error(err);
+                    loader.style.display = 'none';
+                    errorDiv.style.display = 'block';
+                }
+            }, (error) => {
+                loader.style.display = 'none';
+                alert(`GPS Geolocation failed: ${error.message}. Please enable location permissions.`);
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        }
+
+        gpsBtn.addEventListener('click', locateGPS);
 
         // Initial load: locate user's current IP location
         locateIP('');
