@@ -6,7 +6,7 @@ from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
 import uvicorn
 
-app = FastAPI(title="CyberMap API")
+app = FastAPI(title="ShadowTrace API")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INDEX_PATH = os.path.join(BASE_DIR, "templates", "index.html")

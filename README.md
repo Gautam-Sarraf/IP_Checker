@@ -1,4 +1,4 @@
-# 🌐 CyberMap - Interactive IP Geolocation Dashboard
+# 🌐 ShadowTrace - Interactive IP Geolocation Dashboard
 
 An elegant, real-time IP Geolocation dashboard built with **FastAPI** (Python) and **Leaflet.js** (JavaScript). This application lets you lookup any IPv4 or IPv6 address, display comprehensive network/location metadata in a clean card layout, and pinpoint the coordinates on a responsive, light-themed map with custom animations.
 
@@ -31,7 +31,7 @@ pip install fastapi uvicorn requests
 ```
 
 ### 2. Running the Application
-Launch the server from the root of the `ip_checker` folder:
+Launch the server from the root of the `shadow_trace` folder:
 ```bash
 python app.py
 ```
