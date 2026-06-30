@@ -42,6 +42,18 @@ def open_browser():
     webbrowser.open("http://127.0.0.1:8000")
 
 if __name__ == "__main__":
-    Timer(1.5, open_browser).start()
-    print("Starting server at http://127.0.0.1:8000 ...")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    # Render sets the PORT environment variable dynamically
+    port = int(os.environ.get("PORT", 8000))
+    
+    # Check if we are running in a production or headless environment
+    is_render = "RENDER" in os.environ
+    
+    if is_render:
+        print(f"Starting production server on 0.0.0.0:{port}...")
+        uvicorn.run(app, host="0.0.0.0", port=port)
+    else:
+        # Local development auto-launch
+        Timer(1.5, open_browser).start()
+        print(f"Starting local server at http://127.0.0.1:{port}...")
+        uvicorn.run(app, host="127.0.0.1", port=port)
+
