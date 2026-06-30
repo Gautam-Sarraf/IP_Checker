@@ -15,11 +15,30 @@ class get_data:
     @staticmethod
     def get_location(ip=None):
         try:
-            url = f"http://ip-api.com/json/{ip}?fields=61439" if ip else "http://ip-api.com/json/?fields=61439"
+            url = f"https://free.freeipapi.com/api/json/{ip}" if ip else "https://free.freeipapi.com/api/json"
             response = requests.get(url)
             response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
+            raw = response.json()
+            
+            # Map freeipapi keys to standard format expected by the frontend
+            mapped = {
+                "status": "success",
+                "query": raw.get("ipAddress", ip or ""),
+                "country": raw.get("countryName", "-"),
+                "countryCode": raw.get("countryCode", "-"),
+                "region": raw.get("regionCode", "-") or "-",
+                "regionName": raw.get("regionName", "-"),
+                "city": raw.get("cityName", "-"),
+                "zip": raw.get("zipCode", "-"),
+                "lat": raw.get("latitude", 0.0),
+                "lon": raw.get("longitude", 0.0),
+                "timezone": raw.get("timeZones", ["-"])[0] if raw.get("timeZones") else "-",
+                "isp": raw.get("asnOrganization", "-"),
+                "org": raw.get("asnOrganization", "-"),
+                "as": f"AS{raw.get('asn', '')} {raw.get('asnOrganization', '')}".strip() or "-"
+            }
+            return mapped
+        except Exception as e:
             print(f"Error fetching location: {e}")
             return None
 
