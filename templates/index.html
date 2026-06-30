@@ -613,6 +613,19 @@
             loader.style.display = 'flex';
 
             try {
+                // If ip is empty, resolve it using ipify first
+                if (!ip) {
+                    try {
+                        const ipifyRes = await fetch('https://api64.ipify.org?format=json');
+                        if (ipifyRes.ok) {
+                            const ipifyData = await ipifyRes.json();
+                            ip = ipifyData.ip;
+                        }
+                    } catch (e) {
+                        console.warn("ipify failed, falling back to server IP detection:", e);
+                    }
+                }
+
                 const url = ip ? `/api/location?ip=${encodeURIComponent(ip)}` : '/api/location';
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("API network error");
@@ -682,7 +695,20 @@
                 const accuracy = position.coords.accuracy;
                 
                 try {
-                    const response = await fetch('/api/location');
+                    // Try to resolve exact client IP via ipify first to fetch proper network ISP info
+                    let ip = "";
+                    try {
+                        const ipifyRes = await fetch('https://api64.ipify.org?format=json');
+                        if (ipifyRes.ok) {
+                            const ipifyData = await ipifyRes.json();
+                            ip = ipifyData.ip;
+                        }
+                    } catch (e) {
+                        console.warn("ipify failed:", e);
+                    }
+
+                    const url = ip ? `/api/location?ip=${encodeURIComponent(ip)}` : '/api/location';
+                    const response = await fetch(url);
                     const data = response.ok ? await response.json() : {};
                     
                     resIpVisitor.textContent = data.query || "Local GPS";
